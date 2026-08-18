@@ -1,0 +1,22 @@
+pandas
+polars
+numpy
+scikit-learn
+lightgbm
+xgboost
+shap
+river
+optuna
+mlflow
+fastapi
+uvicorn[standard]
+pydantic
+redis
+# feast
+kafka-python
+evidently
+# alibi-detect
+streamlit
+dvc
+pytest
+python-dotenv
