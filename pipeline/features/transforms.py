@@ -2,8 +2,14 @@
 import json
 from collections import defaultdict, deque
 
+import pandas as pd
 import polars as pl
 from kafka import KafkaConsumer, KafkaProducer
+from feast import FeatureStore
+from feast.data_source import PushMode
+
+# Initialize Feast connection
+store = FeatureStore(repo_path="pipeline/sepsis_feast/feature_repo")
 
 BOOTSTRAP = "localhost:9092"
 IN_TOPIC = "vitals.clean"
@@ -33,8 +39,8 @@ def compute_features(patient_id: str, buffer: deque) -> dict:
         "hr_rolling_std": df["heart_rate"].std() or 0.0,
         "map_rolling_mean": df["map_bp"].mean(),
         "map_rolling_std": df["map_bp"].std() or 0.0,
-        # clinically meaningful composite feature
-        "shock_index": latest["heart_rate"] / latest["sbp"] if latest["sbp"] else 0.0,
+        # clinically meaningful composite feature (safe from NoneTypes)
+        "shock_index": latest["heart_rate"] / latest["sbp"] if latest.get("sbp") else 0.0,
     }
     return features
 
@@ -53,13 +59,24 @@ def run():
     )
 
     print("Feature engine running. Waiting for clean messages...")
+    
+    # INDENTATION FIXED: The loop processes one message at a time
     for msg in consumer:
         reading = msg.value
         pid = reading["patient_id"]
         buffers[pid].append(reading)
 
+        # 1. Compute features
         features = compute_features(pid, buffers[pid])
+        
+        # 2. Forward to downstream Kafka topic
         producer.send(OUT_TOPIC, value=features)
+        
+        # 3. Push real-time features to Feast Online Store (Redis)
+        # (Updated to pd.Timestamp.now(tz="UTC") to prevent Pandas deprecation warnings)
+        push_df = pd.DataFrame([{**features, "event_timestamp": pd.Timestamp.now(tz="UTC")}])
+        store.push("vitals_push_source", push_df, to=PushMode.ONLINE)
+
         print(f"[FEATURES] {pid} shock_index={features['shock_index']:.2f} "
               f"hr_mean={features['hr_rolling_mean']:.1f}")
 
