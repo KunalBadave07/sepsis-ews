@@ -50,7 +50,7 @@ def main():
     train_df, test_df = load_split()
 
     # further split train into train/val for Optuna
-    splitter = GroupShuffleSplit(test_size=0.2, n_splits=1, random_state=1)
+    splitter = GroupShuffleSplit(test_size=0.2, n_splits=1, random_state=40)
     tr_idx, val_idx = next(splitter.split(train_df, groups=train_df["patient_id"]))
     tr, val = train_df.iloc[tr_idx], train_df.iloc[val_idx]
 
