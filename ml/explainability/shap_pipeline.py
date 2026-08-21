@@ -33,7 +33,7 @@ class SepsisExplainer:
         start = time.perf_counter()
 
         x = pd.DataFrame([row])[FEATURE_COLS]
-        shap_values = self.explainer.shap_values(x)
+        shap_values = self.explainer.shap_values(x, check_additivity=False)
 
         # LightGBM binary classifier: shap_values may be a list [class0, class1]
         # or a single array depending on shap version — handle both
