@@ -38,7 +38,11 @@ class SWADT:
         self.reference_buffer = {f: [] for f in feature_names}
         self.current_buffer = {f: [] for f in feature_names}
         self.shap_buffer = {f: [] for f in feature_names}
-        self.prev_shap_importance = {f: 0.0 for f in feature_names}
+        # None, not 0.0 — we haven't observed a real importance yet, and
+        # treating "no prior observation" the same as "prior importance
+        # was exactly zero" causes a divide-by-near-zero blowup the
+        # first time any feature has nonzero importance. See _evaluate_window.
+        self.prev_shap_importance = {f: None for f in feature_names}
 
         self.reference_ready = False
         self.trigger_score_history: list[float] = []
@@ -84,7 +88,26 @@ class SWADT:
 
             phi_now = float(np.mean(self.shap_buffer[f])) if self.shap_buffer[f] else 0.0
             phi_prev = self.prev_shap_importance[f]
-            delta_phi = (phi_now - phi_prev) / (phi_prev + 1e-6)
+
+            if phi_prev is None:
+                # first-ever evaluation for this feature: there is no
+                # real prior importance to compare against, so velocity
+                # is undefined. Treat it as zero rather than fabricating
+                # a signal out of an uninitialized baseline.
+                delta_phi = 0.0
+            else:
+                # Floor the denominator. A previous importance near zero
+                # must not be allowed to make delta_phi numerically
+                # explode — that's not "importance is rising fast," it's
+                # division instability. 0.05 is a reasonable floor for
+                # SHAP magnitudes in this feature space; tune per-project.
+                denom = max(phi_prev, 0.05)
+                delta_phi = (phi_now - phi_prev) / denom
+                # Also hard-cap both directions. No real-world drift
+                # should be allowed to produce an unbounded urgency
+                # score — bounded control signals are a basic requirement
+                # for anything that gates an automated action like retraining.
+                delta_phi = float(np.clip(delta_phi, -5.0, 5.0))
 
             urgencies[f] = s_d * (1 + self.lam * max(0.0, delta_phi))
             importances[f] = phi_now
@@ -119,4 +142,3 @@ class SWADT:
             "triggered": triggered,
             "top_contributors": top_contributors,
         }
-    
