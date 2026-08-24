@@ -3,6 +3,8 @@
 Replays historical feature data through SWADT using REAL SHAP importances
 from your Sprint 2 explainer, instead of synthetic fixed values.
 """
+import sys
+sys.path.append('/app')
 import pandas as pd
 from monitoring.retrain_trigger.swadt import SWADT
 from ml.explainability.shap_pipeline import SepsisExplainer

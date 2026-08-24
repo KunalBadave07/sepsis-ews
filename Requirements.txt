@@ -12,11 +12,13 @@ fastapi
 uvicorn[standard]
 pydantic
 redis
-# feast
+feast
 kafka-python
 evidently
-# alibi-detect
+alibi-detect
 streamlit
 dvc
 pytest
 python-dotenv
+python-jose[cryptography]
+psycopg2-binary

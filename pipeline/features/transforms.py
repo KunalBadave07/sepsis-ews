@@ -11,7 +11,7 @@ from feast.data_source import PushMode
 # Initialize Feast connection
 store = FeatureStore(repo_path="pipeline/sepsis_feast/feature_repo")
 
-BOOTSTRAP = "localhost:9092"
+BOOTSTRAP = "redpanda:9092"
 IN_TOPIC = "vitals.clean"
 OUT_TOPIC = "vitals.features"
 WINDOW_SIZE = 8  # last 8 readings ~ 8 hours of data
