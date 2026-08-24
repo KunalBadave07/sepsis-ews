@@ -19,7 +19,9 @@ FEATURE_COLS = [
 ]
 LABEL_COL = "SepsisLabel"
 
-mlflow.set_experiment("sepsis-ews")
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment("sepsis-ews-v2")
+
 
 
 def load_split():
