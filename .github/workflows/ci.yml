@@ -11,6 +11,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r Requirements.txt
+      - run:pip install Cython
       - run: pytest tests/ -v
 
   docker-build-check:
